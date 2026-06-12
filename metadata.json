@@ -1,0 +1,6 @@
+{
+  "name": "Google Ads Disapproval Checker",
+  "description": "一键抓取并分析网站网页代码与内容，智能检测导致谷歌广告(Google Ads)拒登、违规的潜在问题和违规元素，并提供具体的位置及修改建议。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
