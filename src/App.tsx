@@ -31,13 +31,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"url" | "html">("url");
   const [urlInput, setUrlInput] = useState("");
   const [htmlInput, setHtmlInput] = useState(PRESET_SAMPLES[0].htmlContent);
-  const [siteType, setSiteType] = useState<"ecommerce" | "local_service" | "health_nutrition">("ecommerce");
+  const [siteType, setSiteType] = useState<"ecommerce" | "local_service" | "health_nutrition">("local_service");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Active analysis results
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"buyer" | "tech">("buyer");
   
   // History list
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -171,174 +172,99 @@ export default function App() {
 
   // Helper mock results for immediate preview in case the system is running offline or without Gemini Key configured yet
   const getOfflineFallbackResult = (targetHtml: string, targetUrl: string): AnalysisResult => {
-    if (targetHtml.includes("胖胖消") || targetHtml.includes("减肥")) {
+    if (targetHtml.includes("SPA") || targetHtml.includes("理疗") || targetHtml.includes("伦敦")) {
       return {
-        url: targetUrl || "miracle-weight-loss.online",
+        url: targetUrl || "london-royal-spa.co.uk",
         isCompliant: false,
-        complianceScore: 18,
+        complianceScore: 22,
         legalPages: {
           hasPrivacyPolicy: false,
           hasTermsOfService: false,
           hasRefundPolicy: false,
           hasContactInfo: false,
-          contactInfoDetails: "没有具体的物理公司经营地址，只有虚拟表格和匿名信箱"
+          contactInfoDetails: "没有提供任何具体的物理店铺经营地址、门市电话，仅有一个预定按钮，触发严重信用虚伪审查。"
         },
         detectedIssues: [
           {
             id: "issue-1",
             policyCategory: "虚假陈述 (Misrepresentation)",
-            policyName: "不真实保证与绝对化效果宣称",
+            policyName: "不真实保证与绝对化医疗功效宣称",
             severity: "CRITICAL",
-            finding: "页面包含「7天狂瘦20公斤」、「100%见效、治愈任何肥胖、终生不反弹」等违反谷歌广告规则的欺骗性效果宣称与承诺。",
-            offendingElement: `<h2>🔥 惊人承诺：无需运动，无需节食，7天狂瘦20公斤！🔥</h2>\n            <p>我们承诺100%见效，治愈任何顽固性肥胖，终生不反弹！</p>`,
-            reason: "谷歌广告政策禁止任何无法在科学、临床实证中100%复现的医疗健康见效承诺。这被归类为重大欺骗消费者行为，会直接触发最严重的 Circumenting Systems / Misrepresentation 风险。",
-            suggestion: "移除一切关于瘦身速度及‘终身不反弹’的硬性承诺，替换为中性客观的大健康科学成分、免责说明，告知减重效果因人而异。",
-            whereToFix: "修改 <body> 标签 miracle-claims 部分的标题和文案。",
-            suggestedCode: `<!-- 已将严重违反谷歌合规见效性的欺诈段落替换为规范提示 -->
-<div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2 text-center">
-  <p className="text-sm font-semibold text-slate-200">科学营养餐食搭配建议</p>
-  <p className="text-xs text-slate-400">本款膳食营养补充产品通过支持肠道复合代谢提供基础管理机制。*免责声明：健康的身体体态管理须配以持久的运动及规律的生活，实际减脂成色因个人体力和机体而各不相同。</p>
-</div>`
+            finding: "页面包含「100%根除一切腰椎盘突出与长期偏头痛」、「彻底治愈、终生不反弹」等违反谷歌广告安全准则的欺骗性功效承诺。",
+            offendingElement: `<h2>🔥 奇迹疗效：只需1个疗程，100%根除一切腰椎盘突出与长期偏头痛！🔥</h2>\n<p>我们郑重承诺：100%见效... 彻底治愈风湿骨痛，终生不反弹！</p>`,
+            reason: "谷歌广告政策禁止对非医疗/按摩理疗机构或未能在科学实证中100%复现的身体疗效进行保障性、决定性硬性宣称。这极易触发 Misrepresentation 警告或严重封号风险。",
+            suggestion: "移去涉及‘100%根除’、‘终身不反弹’等极具煽动性的字眼，换为温和舒适、放松解压、促进血液循环等合规康护服务文案，并务必在醒目位置标注‘体验说明：效果因个人体质产生科学性差异’的免责提示语。",
+            whereToFix: "修改 <body> 标签内 medical-claims 部分的疗效硬承诺部分。",
+            suggestedCode: `<!-- 建议修改为： -->\n<div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-1 text-center">\n  <p className="text-sm font-semibold text-slate-200">伦敦温和古法热石深层揉拨疗法</p>\n  <p className="text-[10px] text-slate-400">本套推拿疗法旨在通过舒缓按压放松人体紧张肌群。*免责提示：服务调理效果因人而异，具体舒缓体感取决于个人体魄与当天状态。</p>\n</div>`
           },
           {
             id: "issue-2",
-            policyCategory: "规避系统 / 不诚信行为",
-            policyName: "虚假紧迫感与倒计时误导",
-            severity: "CRITICAL",
-            finding: "页面配置了没有真实截止日期的假秒杀活动，带有‘库存仅剩3件’、硬编码循环计时器以及‘一键免密抢购’。",
-            offendingElement: `<div id="fake-timer">00:04:59</div>`,
-            reason: "使用虚设的用户库存限制或强逼倒计时手段对买家施加不健康的支付交易暗示，谷歌智能蜘蛛能全自动识破此类脚本，极易直接判定为欺诈规避审核行为。",
-            suggestion: "如果是真实活动，需指明具体活动截止日期；若非真实变动，强烈建议直接移除计时器及虚假的库存余额文字。",
-            whereToFix: "定位至 class='fake-urgency' 处的 id='fake-timer' 倒计时标签。",
-            suggestedCode: `<!-- 已移除硬编码的虚假促销与强迫性交易倒计时器以满足合规红线 -->
-<div className="promo-period text-slate-400 text-xs text-center">
-  本季特惠活动截止日期：2026-06-30
-</div>`
-          },
-          {
-            id: "issue-3",
-            policyCategory: "目标地体验 (Landing Page Experience)",
-            policyName: "缺少必备消保合规法律条款",
-            severity: "CRITICAL",
-            finding: "页脚完全没有包含隐私政策 (Privacy Policy)、退换货规则、或服务协议的外部跳转链接及物理主体说明。",
-            offendingElement: `<div class="footer-links">\n            <a href="/buy">立即直购</a> | \n            <a href="#">常见问题</a>\n        </div>`,
-            reason: "谷歌对于涉及大健康、资金支付或收集用户数据的所有网页有极其严密的安全合规红线。不提供隐私文件说明，以及不说明如何处理数据、退换渠道，直接执行不予通过政策。",
-            suggestion: "在页脚中额外添加 Privacy Policy、Refund Policy 和 Terms of Service 链接，并加入真实的办公执照备案登记内容。",
-            whereToFix: "在页脚 footer 部分补齐必备的三大合规链接和条款页面。",
-            suggestedCode: `<footer className="footer-links pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-2">
-  <div className="flex justify-center gap-4 flex-wrap">
-    <a href="/privacy-policy" className="hover:underline">隐私政策 (Privacy Policy)</a>
-    <span>|</span>
-    <a href="/terms-of-service" className="hover:underline">服务条款 (Terms)</a>
-    <span>|</span>
-    <a href="/refund-policy" className="hover:underline">退换货规则</a>
-    <span>|</span>
-    <a href="/contact" className="hover:underline">联系我们</a>
-  </div>
-  <p className="text-[10px] text-slate-600">© 2026 奇迹健康管理服务（北京）有限公司。 备案号：京ICP备202600293号-1</p>
-</footer>`
-          },
-          {
-            id: "issue-4",
             policyCategory: "虚假陈述 (Misrepresentation)",
-            policyName: "伪造社会信用与权威代言",
-            severity: "WARNING",
-            finding: "页面包含‘世界顶级医生张教授’‘哈佛大师’等强背书，属于高度可疑的编造代言事实。",
-            offendingElement: `<p>「这是人类医学史上的奇迹！我敢保证世界上没有比这更好的减肥药。」 -- 哈佛著名营养学兼减肥大师 Dr. Max</p>`,
-            reason: "广告主必须保证其背书、论据和代言为真，谷歌会使用语义对行业权威信息库作核验，捏造夸张学术称谓容易触发拒播罚款。",
-            suggestion: "建议替换为真实的普通客户反馈，或配合科学期刊出处的规范临床测试数据进行支撑引用，并包含规范的健康免责申明。",
-            whereToFix: "修改 class='testimony-card' 内的专家代言文字。",
-            suggestedCode: `<p className="testimony-text text-slate-400 text-xs leading-relaxed">
-  「根据我个人的健康管理顾问建议，配合了规律的生活起居与水份补充，体态确实有了轻盈的变化。」 -- 真实用户刘女士个人分享（提示：个人感受并不代表专门的医学诊疗效果）
-</p>`
+            policyName: "隐瞒主导线下营业地址与实体证明",
+            severity: "CRITICAL",
+            finding: "作为主打纽约/伦敦‘线下到店自取体验’的实体广告页，其极力隐瞒详细的门市物理路名、坐席电话及执照注册名，底部的隐私政策协议也采用 javascript:void(0) 的空链接假象绕过。",
+            offendingElement: `<a href="javascript:void(0)">隐私政策 (Privacy Policy)</a>`,
+            reason: "针对到店服务的广告，谷歌爬虫程序通过物理位置定位检查广告主体真实性，空链、无执照无座机号极大可能判定为垃圾虚伪欺诈网站，面临账户永久终止封路风险。",
+            suggestion: "补充真实的门市楼层以及咨询座机号码，并将底部的死循环协议替换为真正装载了隐私保障细则的静态页路径。",
+            whereToFix: "在页脚 footer 处写入真实店址，并重设 Privacy Policy 链接。",
+            suggestedCode: `<span className="block text-slate-500">门市店址：Suite 8A, High Street, London W1 | 电话：+44 20 7946 0199</span>\n<a href="/privacy-policy" target="_blank" className="underline text-indigo-400">隐私政策 (Privacy Policy)</a>`
           }
         ],
         generalRecommendations: [
-          "1. 补充独立的、能够正常点击和跳转的隐私协议模版页面，谷歌蜘蛛会自动跟随爬取隐私声明文件的有效性。",
-          "2. 移除任何包含「100% 根除」、「三天神效级见效」的商业化大健康误导用语，降低风控封号概率。",
-          "3. 补充可追踪的真实公司全称、实际写字楼物理地址、有效的客户响应电子邮箱或中国/海外客服电话。",
-          "4. 所有的底部标签必须真实可跳，去除 href='#' 形式的悬浮空跳漏洞。"
+          "1. 补充独立的、可以跳转加载的隐私协议详情相对路径，谷歌机器人会自动模拟用户跟点进行审查。",
+          "2. 移去由于争抢推拿师、‘仅剩3位’等硬质化虚作计时闹钟，避开虚假紧迫恐慌强逼消费者消费的评级警告。",
+          "3. 建议配上真实的门市全景图或者门头图片，在页脚中补充真实的法律执照编码或营业注册名，提高广告信任评级分值。"
         ]
       };
-    } else if (targetHtml.includes("TechX") || targetHtml.includes("冷风扇")) {
+    } else if (targetHtml.includes("Apex") || targetHtml.includes("租车") || targetHtml.includes("自驾") || targetHtml.includes("Auto")) {
       return {
-        url: targetUrl || "TechX Pro Max 落地页",
+        url: targetUrl || "apex-luxury-rentals.com",
         isCompliant: false,
-        complianceScore: 42,
+        complianceScore: 45,
         legalPages: {
           hasPrivacyPolicy: true,
           hasTermsOfService: true,
           hasRefundPolicy: false,
           hasContactInfo: true,
-          contactInfoDetails: "TechX Store Ltd. (缺少退货具体条件和海外配送退钱天数细则)"
+          contactInfoDetails: "Apex Auto Rentals Group LLC (缺少物理店铺营业网点地址，联系电话只展示为不可拨打的图片)"
         },
         detectedIssues: [
           {
             id: "issue-1",
             policyCategory: "目标地体验",
-            policyName: "滥用死链接与虚假证书图标",
+            policyName: "滥用死链接与虚假协会盖章图标",
             severity: "CRITICAL",
-            finding: "隐私政策与服务条款的跳转链接均采用 href='javascript:void(0)' 的空跳死链，在前台表现为点击无响应。",
-            offendingElement: `<a href="javascript:void(0)">隐私政策 (Privacy Policy)</a>\n            <a href="javascript:void(0)">服务条款 (Terms)</a>`,
-            reason: "谷歌系统对欺诈式空链接极其厌恶，认为广告页面企图蒙骗蜘蛛过审而提供空壳合规。此类虚妄页面属于严重的品质不过线范围。",
-            suggestion: "创建真实且包含条款的静态文本页面，将死循环跳转 href 指向正确的相对路径 /privacy-policy.html 或外部托管链接。",
-            whereToFix: "定位页脚处的 footer-links 重新写入合规锚点。",
-            suggestedCode: `<a href="/privacy-policy.html" target="_blank" className="text-slate-400 hover:text-indigo-400 transition-colors underline">隐私政策 (Privacy Policy)</a>`
-          },
-          {
-            id: "issue-2",
-            policyCategory: "虚假陈述 (Misrepresentation)",
-            policyName: "无法证实的夸大物理学宣称",
-            severity: "WARNING",
-            finding: "「1秒钟让整个卧室直降15度！相当于随身携带5匹中央空调！」这类性能宣称违反基础物理学与一般常识。",
-            offendingElement: `<p>只要摆在床头，1秒钟让整个卧室直降15度！相当于随身携带5匹中央空调！</p>`,
-            reason: "轻量水冷扇等常规电器不具备中央空调的大空间降温性能。谷歌禁止此类没有真实实验报告支撑的技术吹捧，避免诱导导致退换货诉讼。",
-            suggestion: "将其描述调整为常态环保降温原理。建议为「采用生态水分蒸发式水冷降温，能在局部吹出冰爽风，带来舒适环境体验」。",
-            whereToFix: "修改 product-showcase 区间内的性能描述文字。",
-            suggestedCode: `<p className="product-description text-slate-400 text-xs leading-relaxed">
-  利用活性生态蒸发冷风技术，通过加注常温温水或特调冰格冰风系统，能在短时间内有效输出局部低于正常气温 4 至 6 摄氏度的清凉流动气流，带走局部浮热。
-</p>`
-          },
-          {
-            id: "issue-3",
-            policyCategory: "虚假陈述",
-            policyName: "虚假第三方安全授信章徽 (Scam Trust Badges)",
-            severity: "WARNING",
-            finding: "在页脚上方展示「🔒 100% 银行及安全金融保护 | 🛡️ McAfee & Norton 官方认证商铺」的文字与假贴图。",
-            offendingElement: `<p>🔒 100% 银行及安全金融保护 | 🛡️ McAfee & Norton 官方认证商铺</p>`,
-            reason: "许多黑五站和质量太差的独立站为博取信任，经常在没有获得对应数据安全防卫厂商官方授权集成的前提下，硬性贴出杀毒软件或权威机构的安全章，此种恶意背书一旦被语义引擎判定虚假便会被封杀。",
-            suggestion: "移除伪造的权威厂商图标文字。可以用关于 SSL 256-bit 正常加密传输协议说明的常规商业声明进行客观表述替代。",
-            whereToFix: "在 class='trust-icons' 段落移除上述字样。",
-            suggestedCode: `<div className="py-4 border-y border-slate-900 bg-slate-950 text-center">
-  <p className="text-[10px] text-slate-500 max-w-lg mx-auto">
-    🔒 <b>数据安全保障：</b>本网站使用 SSL 256 位高阶网络套接层加密技术，保障您支付过程中的卡片交易信息全程受到安全路由防护。
-  </p>
-</div>`
+            finding: "页面底部隐私协议与免责条款的跳转均写入了 javascript:void(0) 导致死锁，且包含「美联邦道路特许协会联邦官方盖章」等没有任何第三方可溯源支持的正规认证图徽。",
+            offendingElement: `<a href="javascript:void(0)">隐私政策 (Privacy Policy)</a>\n<a href="javascript:void(0)">租赁条款及免责细则 (Terms)</a>`,
+            reason: "谷歌审查策略重拳出击打击虚构协会授权或者伪造第三方安全保护标识的行为。同时，隐私条款‘空跳转假动作’会被无条件判定为系统规避欺瞒行为。",
+            suggestion: "移除空跳标签，设置真正可访问路径；移去无实证的官方机构盖章陈设，替换为自研门市的实景与车队保障。",
+            whereToFix: "定位 footer-links 重写真实的政策指向，并剔除虚构的盖章文武表述。",
+            suggestedCode: `<a href="/privacy-policy.html" className="text-slate-400 hover:text-indigo-400 underline">隐私政策 (Privacy Policy)</a>`
           }
         ],
         generalRecommendations: [
-          "1. 电商类广告必须提供完整的退款、退货与售后规则 (Refund & Return Policy)，其中必须明确说明退货邮费由谁承担、能否全额退款、以及对应的物理回寄仓库地址。",
-          "2. 移除虚假急迫倒计时 ⏳。谷歌系统极力打击‘特惠倒计时’这种依靠时间恐慌强迫客户购买的欺诈式套路。",
-          "3. 页面内所使用的全部社交徽标不能为 href='#' 形式的无用锚标签，避免降权。"
+          "1. 线下车辆到店提车租赁或代售，须提供完整的‘到店取消预约及租车预定金全额清退退改说明’，并公开物理仓库或门店名称。",
+          "2. 去掉特惠还剩3分钟、‘仅剩最后2台’等施加紧急心理压力脚本，杜绝因为恶意催促而面临风控降权扣分。",
+          "3. 补充真实拨打且有人接听的租车咨询直连电话（需包含国际区号），以便谷歌人工随机回访坐席验证虚设。"
         ]
       };
     } else {
-      // General Or SaaS Compliant Mock
+      // Compliant Dental Clinic Demo
       return {
-        url: targetUrl || "smartworks-collaboration.com",
+        url: targetUrl || "royaldentalmanhattan.com",
         isCompliant: true,
-        complianceScore: 95,
+        complianceScore: 98,
         legalPages: {
           hasPrivacyPolicy: true,
           hasTermsOfService: true,
           hasRefundPolicy: true,
           hasContactInfo: true,
-          contactInfoDetails: "SmartWork 软件科技（北京）有限公司 - 北京市海淀区科技创新园 A 栋 808 室"
+          contactInfoDetails: "NY Royal Dental LLC - 123 Broadway Suite 4B, New York, NY 10001 (电话：+1 (212) 555-0199)"
         },
         detectedIssues: [],
         generalRecommendations: [
-          "检测通过！本网页已具备合规的公司物理备案、真实的工作电话与电子邮箱，并在底部合理规划了跳转可达的 隐私政策 和 服务条款 页面链接。",
-          "符合 Google Ads 重大政策指标！您可以通过正规投放渠道安全运行推广。注意在以后的代码迭代中切勿放入弹窗诱导、恶意重定向机制，保障广告体验长久健康。"
+          "极佳评估！该网页展现出极高水准的海外本地实体门市信用体系。配备了极其精确具体的 Broadway 物理街道坐位、具备真实能随时呼叫接通的接听电话，营业状态及营业时间，无任何死链及夸大见效承诺。",
+          "完备的到店预约免责声明与 ADA 自律体系标注让此页面对谷歌爬虫及人工抽检极其友好。您可以放心在 Google Ads 重大政策指标下安全进行投放推广，获取线下引流效果！"
         ]
       };
     }
@@ -400,6 +326,11 @@ export default function App() {
         throw new Error(`无法解析服务器返回内容，前100字符: ${responseText.substring(0, 100)}`);
       }
 
+      // 严格过滤：保证前端拿到的所有待修复违规列表只展现「致命高危 (CRITICAL)」选项，剔除任何中轻度温和警告
+      if (data && data.detectedIssues) {
+        data.detectedIssues = data.detectedIssues.filter((issue: any) => issue.severity === "CRITICAL");
+      }
+
       setResult(data);
       if (data.detectedIssues && data.detectedIssues.length > 0) {
         setSelectedIssueId(data.detectedIssues[0].id);
@@ -429,6 +360,9 @@ export default function App() {
         setApiStatusWarning(`您的自定义API请求失败，请检查 [API接口配置] 中填写的 API Key、Base URL 是否完全合规，或者模型代号错误。具体报错: ${errorDetail}`);
       } else {
         const fallbackData = getOfflineFallbackResult(isRawMode ? htmlInput : "miracle", isRawMode ? "" : urlInput);
+        if (fallbackData && fallbackData.detectedIssues) {
+          fallbackData.detectedIssues = fallbackData.detectedIssues.filter((issue: any) => issue.severity === "CRITICAL");
+        }
         setResult(fallbackData);
         if (fallbackData.detectedIssues && fallbackData.detectedIssues.length > 0) {
           setSelectedIssueId(fallbackData.detectedIssues[0].id);
@@ -619,77 +553,30 @@ export default function App() {
               )}
 
               {/* Site Category Mode Cards */}
-              <div className="space-y-2" id="site-type-selector-card">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-extrabold flex items-center gap-1.5 select-none">
-                    <Info className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="space-y-2.5 bg-indigo-950/20 border border-indigo-500/15 rounded-xl p-3.5" id="site-type-selector-card">
+                <div className="flex items-center gap-1.5 select-none animate-pulse">
+                  <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="text-[11px] uppercase tracking-wider text-indigo-300 font-black">
                     推广业务审查模式 (Policy Lens)
-                  </label>
+                  </span>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-1.5" id="site-type-buttons">
-                  <button
-                    type="button"
-                    onClick={() => setSiteType("ecommerce")}
-                    className={`p-3 rounded-xl text-left border cursor-pointer transition-all ${
-                      siteType === "ecommerce"
-                        ? "bg-indigo-950/30 text-indigo-200 border-indigo-500/60 shadow-lg shadow-indigo-950/50"
-                        : "bg-slate-950/40 border-white/5 text-slate-400 hover:text-slate-300 hover:bg-slate-950/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold flex items-center gap-1.5">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        DTC 跨境电商站 (Online Store)
-                      </span>
-                      {siteType === "ecommerce" && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
-                    </div>
-                    <span className="block text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      从优审查隐私条款、详细退换货天数与物流寄递费用约束
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold text-indigo-200 flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSiteType("local_service")}
-                    className={`p-3 rounded-xl text-left border cursor-pointer transition-all ${
-                      siteType === "local_service"
-                        ? "bg-indigo-950/30 text-indigo-200 border-indigo-500/60 shadow-lg shadow-indigo-950/50"
-                        : "bg-slate-950/40 border-white/5 text-slate-400 hover:text-slate-300 hover:bg-slate-950/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold flex items-center gap-1.5">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        本地实体与线下展示 (Local Business)
-                      </span>
-                      {siteType === "local_service" && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
-                    </div>
-                    <span className="block text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      重点检测联系电话/真实地址。弱化惩罚在线退换
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSiteType("health_nutrition")}
-                    className={`p-3 rounded-xl text-left border cursor-pointer transition-all ${
-                      siteType === "health_nutrition"
-                        ? "bg-indigo-950/30 text-indigo-200 border-indigo-500/60 shadow-lg shadow-indigo-950/50"
-                        : "bg-slate-950/40 border-white/5 text-slate-400 hover:text-slate-300 hover:bg-slate-950/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold flex items-center gap-1.5">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                        黑五大健康/功效推广 (Health Care)
-                      </span>
-                      {siteType === "health_nutrition" && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
-                    </div>
-                    <span className="block text-[10px] text-slate-500 mt-1 leading-relaxed">
-                      严格排查医疗奇迹用语、虚假医师背书以及消保告知缺失
-                    </span>
-                  </button>
+                    海外实体店铺 & 到店消费体验专属机制
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    本分析系统已深度针对**海外线下门市物理商业模式**进行专属策略深度定制，已自动剔除跨境普通电商及大健康黑五功效产品等无关评级项。
+                  </p>
+                  <ul className="text-[9.5px] text-slate-500 space-y-1 pl-4 list-disc marker:text-indigo-400 leading-relaxed">
+                    <li><strong className="text-slate-400">重点审计：</strong>线下物理店铺门市地址 (Physical Address)、到店咨询/预约热线电话及精确营业时间段。</li>
+                    <li><strong className="text-slate-405">核心规避：</strong>绝对化医疗奇迹效果宣称、抢订恐慌虚设计时器、虚假行业背景图章证书。</li>
+                    <li><strong className="text-slate-405">智能优免：</strong>自动对“无购物车”、“无电商直邮寄送政策”等线下到店场景豁免致命处罚，避免高误报。</li>
+                  </ul>
                 </div>
               </div>
 
@@ -902,28 +789,12 @@ export default function App() {
                   
                   <div className="h-10 w-[1px] bg-white/5 hidden sm:block" />
 
-                  {/* Red / Amber / Slate counts row */}
-                  <div className="flex items-center gap-3 bg-slate-950/70 py-1.8 px-3.5 rounded-xl border border-white/5">
-                    <div className="text-center">
-                      <span className="text-xs font-extrabold text-red-450 block">
-                        {result.detectedIssues.filter(i => i.severity === "CRITICAL").length}
-                      </span>
-                      <span className="text-[9.2px] text-slate-500 font-bold block">致命高危</span>
-                    </div>
-                    <div className="w-[1px] h-5 bg-white/5" />
-                    <div className="text-center">
-                      <span className="text-xs font-extrabold text-amber-450 block">
-                        {result.detectedIssues.filter(i => i.severity === "WARNING").length}
-                      </span>
-                      <span className="text-[9.2px] text-slate-500 font-bold block">政策警告</span>
-                    </div>
-                    <div className="w-[1px] h-5 bg-white/5" />
-                    <div className="text-center">
-                      <span className="text-xs font-extrabold text-slate-400 block">
-                        {result.detectedIssues.filter(i => i.severity === "INFO").length}
-                      </span>
-                      <span className="text-[9.2px] text-slate-500 font-bold block">温和优化</span>
-                    </div>
+                  {/* Red count badge only */}
+                  <div className="flex items-center gap-2 bg-red-950/20 py-2 px-4 rounded-xl border border-red-500/20">
+                    <span className="text-sm font-black text-red-500 animate-pulse">
+                      {result.detectedIssues.filter(i => i.severity === "CRITICAL").length}
+                    </span>
+                    <span className="text-[10.5px] text-red-400 font-bold">项 致命高危违规</span>
                   </div>
                   
                   <span className={`text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded-xl border shrink-0 ${
@@ -967,7 +838,7 @@ export default function App() {
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>独立合规条例审计</span>
                 </button>
-                
+
                 <button
                   type="button"
                   onClick={() => setResultTab("tips")}
@@ -986,61 +857,95 @@ export default function App() {
               {/* Tab 1: Issues Finder Twin-Pane Layout */}
               {resultTab === "violations" && (
                 <div className="space-y-4 animate-in fade-in duration-250" id="tab-content-violations">
+                  
+                  {/* Media Buyer Myth Buster Alert Box */}
+                  <div className="bg-slate-900/50 border border-indigo-500/10 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl" id="buyer-alert-mythbuster">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 text-indigo-400 rounded-xl shrink-0 mt-0.5">
+                        <Sparkles className="w-4.5 h-4.5 animate-pulse" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-bold text-slate-100 flex items-center gap-1.5 flex-wrap">
+                          <span>💡 投手避雷：为什么正常在跑、没有拒登的广告链接，还会检测出这么多风险？</span>
+                          <span className="text-[10px] text-amber-400 font-normal bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">投手避雷针 🎯</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-400 leading-relaxed max-w-4xl font-sans mt-0.5">
+                          <strong>① 幸存者偏差（强风控后扫机制）：</strong>谷歌广告存在“机审延迟”和“消耗信用额度期”。新域名新站往往能正常跑一段时间，这不表示它绝对合规。<strong>一旦账户消耗增大、竞争对手恶意举报、或碰上谷歌例行算法更新</strong>，强力爬虫会回扫代码，若含有违规代码，将<strong>瞬间直接封停账户（规避系统/虚假陈述），连带封杀 BM、个人号或支付卡</strong>，且此类状态极其难申诉！
+                          <br />
+                          <strong>② 隐形降权与高CPC罚款：</strong>如果网页缺少消保基础（如退换货政策或联系地址），谷歌会大打折扣您的“落地页体验分”。作为惩罚，谷歌会<strong>暗中将您的 CPM (千次展示单价) 和 CPC (点击扣费) 提高 1.5 到 3 倍</strong>，默默吞噬投手的广告利润。预先修补风险，是用最低成本保护黄金主力户寿命、提升广告投资回报率 (ROAS) 的最聪明做法。
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {result.detectedIssues.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-5 animate-slide-in-from-bottom" id="analyzer-diagnostics-interactive">
                       
-                      {/* Left Selection List: span-4 */}
-                      <div className="md:col-span-4 space-y-2 max-h-[580px] overflow-y-auto pr-1.5" id="flaws-selection-list">
-                        <div className="flex items-center justify-between px-1 mb-1 bg-slate-950/20 py-1 rounded">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                             捕获页面缺陷句段
+                      {/* Left Column: Issues list - span-4 */}
+                      <div className="md:col-span-4 space-y-2.5 max-h-[700px] overflow-y-auto pr-1" id="flaws-list-left-panel">
+                        <div className="flex items-center justify-between px-1 mb-1">
+                          <span className="text-[11px] font-extrabold text-slate-300">
+                            捕获页面缺陷段落 (共 {result.detectedIssues.length} 处)
                           </span>
-                          <span className="text-[9.5px] text-slate-500 bg-slate-950 px-1.5 py-0.5 rounded border border-white/5 font-semibold">
-                            共 {result.detectedIssues.length} 处
+                          <span className="text-[9.5px] text-slate-500 font-mono">
+                            DETECTED ISSUES
                           </span>
                         </div>
                         
-                        {result.detectedIssues.map((issue) => (
-                          <button
-                            key={issue.id}
-                            type="button"
-                            onClick={() => setSelectedIssueId(issue.id)}
-                            className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer group block relative ${
-                              selectedIssueId === issue.id
-                                ? "bg-indigo-950/20 border-indigo-500 text-white shadow-md shadow-indigo-950/20 ring-1 ring-indigo-500/20"
-                                : "bg-slate-950/30 border-white/[0.04] hover:bg-slate-900/30 hover:border-slate-800 text-slate-350"
-                            }`}
-                            id={`diagnostic-item-${issue.id}`}
-                          >
-                            <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                              <span className="text-xs font-bold leading-tight group-hover:text-indigo-300 transition-colors">
-                                {issue.policyName}
-                              </span>
-                              <span className={`text-[8px] font-mono font-extrabold shrink-0 px-1.5 py-0.2 rounded uppercase ${
-                                issue.severity === "CRITICAL"
-                                  ? "bg-red-500/10 text-red-400 border border-red-500/15"
-                                  : issue.severity === "WARNING"
-                                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/15"
-                                  : "bg-slate-800 text-slate-400"
-                              }`}>
-                                {issue.severity === "CRITICAL" ? "高危拒登" : issue.severity === "WARNING" ? "中限警告" : "优化小建议"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[9.5px] text-slate-500 mb-2">
-                              <span className="bg-slate-900/85 border border-white/5 px-1.5 py-0.2 rounded">
-                                {issue.policyCategory}
-                              </span>
-                            </div>
-                            <p className="text-[10.5px] text-slate-450 line-clamp-2 leading-relaxed">
-                              {issue.finding}
-                            </p>
-                            
-                            <div className="flex items-center justify-end text-[10px] text-indigo-400 font-bold mt-2 pt-2 border-t border-white/[0.02] opacity-80 group-hover:opacity-100 transition-all">
-                              <span>查看修复及重写方案</span>
-                              <ChevronRight className="w-3 h-3 ml-0.5" />
-                            </div>
-                          </button>
-                        ))}
+                        <div className="space-y-2">
+                          {result.detectedIssues.map((issue) => {
+                            const isSelected = selectedIssueId === issue.id;
+                            return (
+                              <button
+                                key={issue.id}
+                                type="button"
+                                onClick={() => setSelectedIssueId(issue.id)}
+                                className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 relative overflow-hidden group ${
+                                  isSelected
+                                    ? "bg-indigo-950/40 border-indigo-500/50 shadow-md shadow-indigo-650/10"
+                                    : "bg-slate-950/40 border-white/[0.03] hover:border-white/[0.08] hover:bg-slate-900/20"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500" />
+                                )}
+                                
+                                <div className="flex items-start justify-between gap-1.5">
+                                  <span className={`text-[11.5px] font-extrabold tracking-tight group-hover:text-indigo-300 transition-colors ${
+                                    isSelected ? "text-indigo-200 font-extrabold" : "text-slate-200"
+                                  }`}>
+                                    {issue.policyName}
+                                  </span>
+                                  
+                                  <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold tracking-wider uppercase shrink-0 border ${
+                                    issue.severity === "CRITICAL"
+                                      ? "bg-red-500/10 border-red-500/15 text-red-400"
+                                      : issue.severity === "WARNING"
+                                      ? "bg-amber-500/10 border-amber-500/15 text-amber-400"
+                                      : "bg-indigo-950/50 border-indigo-500/10 text-indigo-300"
+                                  }`}>
+                                    {issue.severity === "CRITICAL" ? "致命高危" : issue.severity === "WARNING" ? "政策警告" : "温和优化"}
+                                  </span>
+                                </div>
+                                
+                                <div className="text-[9.5px] text-slate-500 font-mono uppercase tracking-wide">
+                                  {issue.policyCategory}
+                                </div>
+                                
+                                <div className="text-[10.5px] text-slate-400 leading-normal line-clamp-2 font-sans font-medium">
+                                  {issue.finding}
+                                </div>
+
+                                <div className={`text-[9.5px] font-bold flex items-center gap-1 mt-1 transition-colors self-end ${
+                                  isSelected ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300"
+                                }`}>
+                                  <span>查看修复及重写方案</span>
+                                  <span>→</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Right Detailed Inspector Panel: span-8 */}
@@ -1048,9 +953,9 @@ export default function App() {
                         {selectedIssue ? (
                           <div className="bg-slate-900/70 border border-white/5 rounded-2xl p-5 shadow-2xl backdrop-blur-xl space-y-4 animate-in fade-in zoom-in-95 duration-200" id="violating-inspector-content">
                             
-                            <div className="flex items-start justify-between border-b border-white/5 pb-3.5 gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/5 pb-3.5 gap-3">
                               <div>
-                                <span className="text-[9.5px] uppercase font-bold tracking-widest text-indigo-455 block mb-0.5">
+                                <span className="text-[9.5px] uppercase font-bold tracking-widest text-indigo-400 block mb-0.5">
                                   诊断引擎深度剖析 (Expert Inspection)
                                 </span>
                                 <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
@@ -1065,165 +970,319 @@ export default function App() {
                               </span>
                             </div>
 
-                            {/* Two Column Analysis */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="bg-slate-950/60 rounded-xl p-3.5 border border-white/[0.02] space-y-1.5 shadow-inner">
-                                <h4 className="text-[10.5px] font-extrabold tracking-wide text-slate-350 flex items-center gap-1.5 mb-1">
-                                  <Info className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                  <span>检出事实评估 (Findings)</span>
-                                </h4>
-                                <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                                  {selectedIssue.finding}
-                                </p>
-                              </div>
-                              <div className="bg-slate-950/60 rounded-xl p-3.5 border border-white/[0.02] space-y-1.5 shadow-inner">
-                                <h4 className="text-[10.5px] font-extrabold tracking-wide text-slate-350 flex items-center gap-1.5 mb-1">
-                                  <ShieldAlert className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                  <span>触发谷歌红线逻辑 (Ad Policy Logic)</span>
-                                </h4>
-                                <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                                  {selectedIssue.reason}
-                                </p>
+                            {/* Perspective View Switcher */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-950/70 p-2.5 rounded-2xl border border-white/[0.04] gap-2">
+                              <span className="text-[10.5px] font-sans font-medium text-slate-450 flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                <span>报告解读倾向（点击切换）：</span>
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewMode("buyer")}
+                                  className={`px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1 ${
+                                    viewMode === "buyer"
+                                      ? "bg-indigo-650 text-white shadow-lg ring-1 ring-indigo-500/25 font-extrabold"
+                                      : "text-slate-400 hover:text-slate-200 bg-transparent hover:bg-white/[0.02]"
+                                  }`}
+                                >
+                                  <span>📋 投手大白话模式 (业务说明)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setViewMode("tech")}
+                                  className={`px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all flex items-center gap-1 ${
+                                    viewMode === "tech"
+                                      ? "bg-indigo-650 text-white shadow-lg ring-1 ring-indigo-500/25 font-extrabold"
+                                      : "text-slate-400 hover:text-slate-200 bg-transparent hover:bg-white/[0.02]"
+                                  }`}
+                                >
+                                  <span>💻 程序员技术模式 (源码对照)</span>
+                                </button>
                               </div>
                             </div>
 
-                            {/* Side-by-Side Unified Code Inspector */}
-                            <div className="pt-4 border-t border-white/5 space-y-3.5">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-white/[0.03]">
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] uppercase font-extrabold text-indigo-400 block tracking-wider">合规修改建议位置</span>
-                                  <p className="text-[11px] font-mono text-slate-200">
-                                    {selectedIssue.whereToFix}
-                                  </p>
-                                </div>
-                                
-                                {activeTab === "html" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleApplyFix(selectedIssue)}
-                                    className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer active:scale-95 ${
-                                      fixAppliedStatus[selectedIssue.id] === "success"
-                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-black shadow-lg shadow-emerald-500/5"
-                                        : fixAppliedStatus[selectedIssue.id] === "error"
-                                        ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                                        : "bg-indigo-600 hover:bg-indigo-550 border-indigo-700 text-white shadow-lg shadow-indigo-600/10"
-                                    }`}
-                                    id={`apply-fix-btn-${selectedIssue.id}`}
-                                  >
-                                    {fixAppliedStatus[selectedIssue.id] === "success" ? (
-                                      <>
-                                        <Check className="w-3.5 h-3.5 animate-bounce text-emerald-400" />
-                                        <span>源码一键替换修复成功！</span>
-                                      </>
-                                    ) : fixAppliedStatus[selectedIssue.id] === "error" ? (
-                                      <>
-                                        <X className="w-3.5 h-3.5 text-rose-45.5" />
-                                        <span>源码未全文匹配（已备份到剪贴板）</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <CheckCircle className="w-3.5 h-3.5 text-indigo-100" />
-                                        <span>智能修正并覆盖源码</span>
-                                      </>
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-white/5 rounded-2xl overflow-hidden bg-slate-950 shadow-2xl" id="code-diff-container">
-                                
-                                {/* Left Deletion Code block */}
-                                <div className="flex flex-col border-r border-white/5 bg-red-950/[0.01] relative" id="diff-left-pane">
-                                  <div className="flex items-center justify-between px-3 py-2 bg-red-950/10 border-b border-white/5">
-                                    <div className="flex items-center gap-1.5 text-red-400 font-bold text-[9px] uppercase tracking-wider">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                      <span>含有拒登风险代码的原句</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleCopyText(selectedIssue.offendingElement, "offending-" + selectedIssue.id)}
-                                      className="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                      title="复制这段风险节点"
-                                    >
-                                      {copiedStates["offending-" + selectedIssue.id] ? (
-                                        <><Check className="w-3.5 h-3.5 text-red-400" /><span>已复制</span></>
-                                      ) : (
-                                        <><Copy className="w-3 h-3" /><span>复制</span></>
-                                      )}
-                                    </button>
+                            {/* Conditional tabs based on selected view mode */}
+                            {viewMode === "buyer" ? (
+                              <div className="space-y-4 animate-in fade-in duration-200" id="buyer-insight-view">
+                                {/* Headline Row layout */}
+                                <div className="bg-slate-950/40 rounded-xl p-4 border border-white/[0.02] space-y-3.5 shadow-inner">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 border border-indigo-500/20 px-2 py-0.5 rounded">
+                                      🚨 投流业务安全评级及痛点说明
+                                    </span>
                                   </div>
                                   
-                                  <div className="flex-1 overflow-x-auto min-h-[140px] max-h-[260px] flex font-mono text-[10.5px]">
-                                    <div className="select-none text-right pr-2 text-rose-500/40 border-r border-rose-500/10 bg-red-500/[0.01] py-2.5 px-2 min-w-[32px] shrink-0 font-medium text-[10px]">
-                                      {selectedIssue.offendingElement.split("\n").map((_, i) => (
-                                        <div key={i} className="leading-5 h-5">- {i + 1}</div>
-                                      ))}
+                                  {/* Layman terms breakdown */}
+                                  <div className="space-y-3 font-sans">
+                                    <div className="flex items-start gap-2.5">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
+                                      <div className="text-[11.5px] leading-relaxed">
+                                        <strong className="text-slate-200 font-bold block mb-1">🔴 投手大白话剖析（发生了什么）：</strong>
+                                        <div className="mb-2">
+                                          {selectedIssue.severity === "CRITICAL" ? (
+                                            <span className="text-red-400 font-bold bg-red-500/10 border border-red-500/15 px-2 py-0.5 rounded text-[11px]">
+                                              【极其致命】随时可能导致您的 Google 广告账户被无预警永久封杀（全主体连带死号）！
+                                            </span>
+                                          ) : selectedIssue.severity === "WARNING" ? (
+                                            <span className="text-amber-400 font-semibold bg-amber-500/10 border border-amber-500/15 px-2 py-0.5 rounded text-[11px]">
+                                              【高危警告】面临卡片素材拒登不予展示、或导致整页体验评分暴跌！
+                                            </span>
+                                          ) : (
+                                            <span className="text-teal-400 font-semibold bg-teal-500/10 border border-teal-500/15 px-2 py-0.5 rounded text-[11px]">
+                                              【细节建议】属于合规细节评分锦上添花，可有效缓解投流降权。
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-slate-400">
+                                          在扫描落地页时，谷歌发现了这项毛病：<span className="text-slate-200 font-medium">{selectedIssue.finding}</span>。
+                                          哪怕现在还在运行，这个严重违规一旦遇到大额消耗、例行爬虫升级或二次抽查，必定触发封禁。
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="flex-1 py-2.5 px-3 overflow-x-auto bg-rose-500/[0.01]">
-                                      {selectedIssue.offendingElement.split("\n").map((line, i) => (
-                                        <div 
-                                          key={i} 
-                                          className="leading-5 h-5 px-1 bg-red-550/5 hover:bg-red-500/[0.08] transition-colors rounded text-rose-100/90 whitespace-pre"
-                                          dangerouslySetInnerHTML={{ __html: highlightHTML(line) || " " }}
-                                        />
-                                      ))}
+
+                                    <div className="flex items-start gap-2.5 pt-2.5 border-t border-white/[0.02]">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                                      <div className="text-[11.5px] leading-relaxed">
+                                        <strong className="text-slate-200 font-bold block mb-1">🛡️ 谷歌处罚的逻辑底线（为什么要改）：</strong>
+                                        <p className="text-slate-350">
+                                          {selectedIssue.reason}
+                                        </p>
+                                        <p className="text-slate-400 mt-1.5">
+                                          不要抱有侥幸心理。提前通过防范合规审计修复该代码，是维护主力户（BM/企业户）寿命、节约测试域名资金最明智、最低成本的选择。
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2.5 pt-2.5 border-t border-white/[0.02]">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 shrink-0" />
+                                      <div className="text-[11.5px] leading-relaxed">
+                                        <strong className="text-slate-200 font-bold block mb-1">🎯 投手建议采取的整改路径：</strong>
+                                        <p className="text-slate-350">
+                                          {selectedIssue.suggestion}
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Right Suggested rewrite code block */}
-                                <div className="flex flex-col bg-emerald-950/[0.01] relative" id="diff-right-pane">
-                                  <div className="flex items-center justify-between px-3 py-2 bg-emerald-950/10 border-b border-white/5">
-                                    <div className="flex items-center gap-1.5 text-emerald-450 font-bold text-[9px] uppercase tracking-wider">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                      <span>推荐采用之合规安全段落</span>
-                                    </div>
+                                {/* Custom Copy Messaging for Developers */}
+                                <div className="bg-gradient-to-br from-indigo-950/20 via-slate-950/40 to-slate-950/80 rounded-2xl p-4.5 border border-indigo-500/15 relative overflow-hidden">
+                                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2.5xl pointer-events-none" />
+                                  
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+                                    <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                                      <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                                      <span>📤 投手直发建站技术的“微指令”卡片</span>
+                                    </span>
+                                    
                                     <button
                                       type="button"
-                                      onClick={() => handleCopyText(selectedIssue.suggestedCode || selectedIssue.suggestion, "suggested-" + selectedIssue.id)}
-                                      className="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                      title="复制合规重写段落"
+                                      onClick={() => handleCopyText(`【落地页合规待修指令】
+建站师傅，请帮我修复一下投流落地页 ${result?.url || "直接输入代码"} 的谷歌广告合规红线问题：
+──────────────────────
+【问题名称】：${selectedIssue.policyName} (${selectedIssue.policyCategory})
+【风险级别】：${selectedIssue.severity === "CRITICAL" ? "🔴 极其致命（随时面临整户封杀、封域名风险）" : selectedIssue.severity === "WARNING" ? "🟡 高危警告（随时被拒登拒审，流量体验权重受损）" : "🔵 细节优化（提升落地页体验，节省CPC扣费）"}
+【检出原句】：${selectedIssue.offendingElement}
+【修改位置】：${selectedIssue.whereToFix}
+【合规安全替换建议】：
+${selectedIssue.suggestedCode || selectedIssue.suggestion}
+──────────────────────
+请改好后反馈一下，我们马上提审重新跑！辛苦您的技术协助！`, "forward-card-" + selectedIssue.id)}
+                                      className={`px-3 py-1.5 text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                        copiedStates["forward-card-" + selectedIssue.id]
+                                          ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold"
+                                          : "bg-indigo-600 hover:bg-slate-800 hover:border-slate-700 border border-indigo-555 text-white shadow-lg shadow-indigo-600/10 active:scale-95"
+                                      }`}
                                     >
-                                      {copiedStates["suggested-" + selectedIssue.id] ? (
-                                        <><Check className="w-3.5 h-3.5 text-emerald-450" /><span>已复制</span></>
+                                      {copiedStates["forward-card-" + selectedIssue.id] ? (
+                                        <><Check className="w-3.5 h-3.5" /><span>已复制指令卡片！</span></>
                                       ) : (
-                                        <><Copy className="w-3 h-3" /><span>复制</span></>
+                                        <><Copy className="w-3 h-3" /><span>一键复制转发微信卡片</span></>
                                       )}
                                     </button>
                                   </div>
 
-                                  <div className="flex-1 overflow-x-auto min-h-[140px] max-h-[260px] flex font-mono text-[10.5px]">
-                                    <div className="select-none text-right pr-2 text-emerald-500/40 border-r border-emerald-500/10 bg-emerald-500/[0.01] py-2.5 px-2 min-w-[32px] shrink-0 font-medium text-[10px]">
-                                      {(selectedIssue.suggestedCode || selectedIssue.suggestion).split("\n").map((_, i) => (
-                                        <div key={i} className="leading-5 h-5">+ {i + 1}</div>
-                                      ))}
+                                  <div className="bg-slate-950/80 border border-white/5 rounded-xl p-3.5 text-[10.5px] text-slate-400 select-all space-y-1.5 text-left font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
+                                    <div className="flex items-center justify-between border-b border-white/[0.04] pb-1.5 mb-1.5 text-[8.5px] tracking-wider text-slate-550 uppercase">
+                                      <span>📋 微信/飞书内容发送预览</span>
+                                      <span>CLONE CHAT MESSAGE PREVIEW</span>
                                     </div>
-                                    <div className="flex-1 py-2.5 px-3 overflow-x-auto bg-emerald-500/[0.01]">
-                                      {(selectedIssue.suggestedCode || selectedIssue.suggestion).split("\n").map((line, i) => (
-                                        <div 
-                                          key={i} 
-                                          className="leading-5 h-5 px-1 bg-emerald-500/5 hover:bg-emerald-500/[0.08] transition-colors rounded text-emerald-100/90 whitespace-pre"
-                                          dangerouslySetInnerHTML={{ __html: highlightHTML(line) || " " }}
-                                        />
-                                      ))}
+                                    <div><span className="text-slate-350">【落地页合规待修指令】</span></div>
+                                    <div>推广链接: <span className="text-slate-400 break-all underline">${result?.url || "直接粘贴输入"}</span></div>
+                                    <div>问题项目: <span className="text-slate-200">${selectedIssue.policyName} (${selectedIssue.policyCategory})</span></div>
+                                    <div>风险等级: <span className={selectedIssue.severity === "CRITICAL" ? "text-red-400 font-bold" : "text-amber-400 font-bold"}>{selectedIssue.severity === "CRITICAL" ? "🔴 极其致命（随时面临死号封域名风险）" : selectedIssue.severity === "WARNING" ? "🟡 高危警告（可能卡片被拒登拒审）" : "🔵 建议优化（提高体验评分并更省油）"}</span></div>
+                                    <div>具体故障: <span className="text-slate-300 font-sans">${selectedIssue.finding}</span></div>
+                                    <div>修改位置: <span className="text-slate-100 font-bold">${selectedIssue.whereToFix}</span></div>
+                                    <div className="text-slate-450 mt-1">安全参考改法:</div>
+                                    <div className="bg-slate-900 px-2.5 py-2 rounded border border-white/[0.02] text-emerald-400 text-[10px] break-all leading-normal whitespace-pre-wrap">${selectedIssue.suggestedCode || selectedIssue.suggestion}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-4 animate-in fade-in duration-200" id="tech-code-view">
+                                {/* Two Column Analysis */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="bg-slate-950/60 rounded-xl p-3.5 border border-white/[0.02] space-y-1.5 shadow-inner">
+                                    <h4 className="text-[10.5px] font-extrabold tracking-wide text-slate-350 flex items-center gap-1.5 mb-1">
+                                      <Info className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                      <span>检出事实评估 (Findings)</span>
+                                    </h4>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+                                      {selectedIssue.finding}
+                                    </p>
+                                  </div>
+                                  <div className="bg-slate-950/60 rounded-xl p-3.5 border border-white/[0.02] space-y-1.5 shadow-inner">
+                                    <h4 className="text-[10.5px] font-extrabold tracking-wide text-slate-350 flex items-center gap-1.5 mb-1">
+                                      <ShieldAlert className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                      <span>触发谷歌红线逻辑 (Ad Policy Logic)</span>
+                                    </h4>
+                                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                                      {selectedIssue.reason}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Side-by-Side Unified Code Inspector */}
+                                <div className="pt-2 space-y-3.5">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-white/[0.03]">
+                                    <div className="space-y-0.5">
+                                      <span className="text-[9px] uppercase font-extrabold text-indigo-400 block tracking-wider">合规修改建议位置</span>
+                                      <p className="text-[11px] font-mono text-slate-200">
+                                        {selectedIssue.whereToFix}
+                                      </p>
+                                    </div>
+                                    
+                                    {activeTab === "html" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleApplyFix(selectedIssue)}
+                                        className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer active:scale-95 ${
+                                          fixAppliedStatus[selectedIssue.id] === "success"
+                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-black shadow-lg shadow-emerald-500/5"
+                                            : fixAppliedStatus[selectedIssue.id] === "error"
+                                            ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                                            : "bg-indigo-650 hover:bg-indigo-550 border-indigo-700 text-white shadow-lg shadow-indigo-600/10"
+                                        }`}
+                                        id={`apply-fix-btn-${selectedIssue.id}`}
+                                      >
+                                        {fixAppliedStatus[selectedIssue.id] === "success" ? (
+                                          <>
+                                            <Check className="w-3.5 h-3.5 animate-bounce text-emerald-400" />
+                                            <span>源码一键替换修复成功！</span>
+                                          </>
+                                        ) : fixAppliedStatus[selectedIssue.id] === "error" ? (
+                                          <>
+                                            <X className="w-3.5 h-3.5 text-rose-45" />
+                                            <span>源码未全文匹配（已备份到剪贴板）</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CheckCircle className="w-3.5 h-3.5 text-indigo-100" />
+                                            <span>智能修正并覆盖源码</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-white/5 rounded-2xl overflow-hidden bg-slate-950 shadow-2xl" id="code-diff-container">
+                                    
+                                    {/* Left Deletion Code block */}
+                                    <div className="flex flex-col border-r border-white/5 bg-red-950/[0.01] relative" id="diff-left-pane">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-red-950/10 border-b border-white/5">
+                                        <div className="flex items-center gap-1.5 text-red-400 font-bold text-[9px] uppercase tracking-wider">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                          <span>含有拒登风险代码的原句</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleCopyText(selectedIssue.offendingElement, "offending-" + selectedIssue.id)}
+                                          className="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                          title="复制这段风险节点"
+                                        >
+                                          {copiedStates["offending-" + selectedIssue.id] ? (
+                                            <><Check className="w-3.5 h-3.5 text-red-400" /><span>已复制</span></>
+                                          ) : (
+                                            <><Copy className="w-3 h-3" /><span>复制</span></>
+                                          )}
+                                        </button>
+                                      </div>
+                                      
+                                      <div className="flex-1 overflow-x-auto min-h-[140px] max-h-[260px] flex font-mono text-[10.5px]">
+                                        <div className="select-none text-right pr-2 text-rose-500/40 border-r border-rose-500/10 bg-red-500/[0.01] py-2.5 px-2 min-w-[32px] shrink-0 font-medium text-[10px]">
+                                          {selectedIssue.offendingElement.split("\n").map((_, i) => (
+                                            <div key={i} className="leading-5 h-5">- {i + 1}</div>
+                                          ))}
+                                        </div>
+                                        <div className="flex-1 py-2.5 px-3 overflow-x-auto bg-rose-500/[0.01]">
+                                          {selectedIssue.offendingElement.split("\n").map((line, i) => (
+                                            <div 
+                                              key={i} 
+                                              className="leading-5 h-5 px-1 bg-red-550/5 hover:bg-red-500/[0.08] transition-colors rounded text-rose-100/90 whitespace-pre"
+                                              dangerouslySetInnerHTML={{ __html: highlightHTML(line) || " " }}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Right Suggested rewrite code block */}
+                                    <div className="flex flex-col bg-emerald-950/[0.01] relative" id="diff-right-pane">
+                                      <div className="flex items-center justify-between px-3 py-2 bg-emerald-950/10 border-b border-white/5">
+                                        <div className="flex items-center gap-1.5 text-emerald-450 font-bold text-[9px] uppercase tracking-wider">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                          <span>推荐采用之合规安全段落</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleCopyText(selectedIssue.suggestedCode || selectedIssue.suggestion, "suggested-" + selectedIssue.id)}
+                                          className="text-[10px] text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                          title="复制合规重写段落"
+                                        >
+                                          {copiedStates["suggested-" + selectedIssue.id] ? (
+                                            <><Check className="w-3.5 h-3.5 text-emerald-450" /><span>已复制</span></>
+                                          ) : (
+                                            <><Copy className="w-3 h-3" /><span>复制</span></>
+                                          )}
+                                        </button>
+                                      </div>
+
+                                      <div className="flex-1 overflow-x-auto min-h-[140px] max-h-[260px] flex font-mono text-[10.5px]">
+                                        <div className="select-none text-right pr-2 text-emerald-500/40 border-r border-emerald-500/10 bg-emerald-500/[0.01] py-2.5 px-2 min-w-[32px] shrink-0 font-medium text-[10px]">
+                                          {(selectedIssue.suggestedCode || selectedIssue.suggestion).split("\n").map((_, i) => (
+                                            <div key={i} className="leading-5 h-5">+ {i + 1}</div>
+                                          ))}
+                                        </div>
+                                        <div className="flex-1 py-1.5 px-3 overflow-x-auto bg-emerald-500/[0.01]">
+                                          {(selectedIssue.suggestedCode || selectedIssue.suggestion).split("\n").map((line, i) => (
+                                            <div 
+                                              key={i} 
+                                              className="leading-5 h-5 px-1 bg-emerald-500/5 hover:bg-emerald-500/[0.08] transition-colors rounded text-emerald-100/90 whitespace-pre"
+                                              dangerouslySetInnerHTML={{ __html: highlightHTML(line) || " " }}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                  
+                                  {/* Extra advice box */}
+                                  <div className="p-4 bg-slate-950 border border-white/[0.02] rounded-xl flex items-start gap-2.5 shadow-inner">
+                                    <Sparkles className="w-4.5 h-4.5 text-indigo-400 shrink-0" />
+                                    <div className="space-y-1">
+                                      <span className="text-[10.5px] uppercase font-bold text-indigo-200">
+                                        审核专员纠正手段 (Action Steps):
+                                      </span>
+                                      <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                                        {selectedIssue.suggestion}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
                               </div>
-                              
-                              {/* Extra advice box */}
-                              <div className="p-4 bg-slate-950 border border-white/[0.02] rounded-xl flex items-start gap-2.5 shadow-inner">
-                                <Sparkles className="w-4.5 h-4.5 text-indigo-400 shrink-0" />
-                                <div className="space-y-1">
-                                  <span className="text-[10.5px] uppercase font-bold text-indigo-200">
-                                    审核专员纠正手段 (Action Steps):
-                                  </span>
-                                  <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
-                                    {selectedIssue.suggestion}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         ) : (
                           <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-12 text-center text-slate-500 flex flex-col items-center justify-center space-y-3" id="no-issue-selected-well">
@@ -1585,9 +1644,9 @@ export default function App() {
               <div className="bg-slate-900/25 border border-white/5 rounded-2xl p-5 flex items-start gap-3 shadow-lg">
                 <Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5 animate-pulse" />
                 <div className="space-y-1 leading-relaxed text-xs">
-                  <p className="text-slate-300 font-extrabold">🚀 如何在本机离线运行完全测试？</p>
+                  <p className="text-slate-300 font-extrabold">🚀 如何在没有配置 API 密钥时快速进行完整特性预览？</p>
                   <p className="text-slate-400 font-sans">
-                    系统默认支持在线直连 API，在没有配置独家 API 账号的情况下，我们将智能针对胖胖消减肥药单页、TechX 冷风扇等黑五典型拒登模板自动激活高性能<b>「离线本地诊断沙箱」</b>模拟整套报告输出！请随意在左上角点选预设样本测试完美效果。
+                    系统默认支持在线直连 API，在没有配置独家 API 账号的情况下，我们将智能针对皇家SPA会所、北美豪华自驾租车等线下实体拒登模板自动激活高性能<b>「离线本地诊断沙箱」</b>模拟整套报告输出！请随意在左上角点选预设样本测试完美效果。
                   </p>
                 </div>
               </div>

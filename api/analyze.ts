@@ -88,7 +88,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { url, rawHtml, isRawMode, siteType = "ecommerce" } = req.body;
+    const { url, rawHtml, isRawMode, siteType = "local_service" } = req.body;
     
     let contentsToAnalyze = "";
     let sourceUrl = url || "直接粘贴输入";
@@ -110,44 +110,25 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: "未检测到任何可供分析的页面内容或HTML代码！" });
     }
 
-    const siteTypeLabels: Record<string, string> = {
-      ecommerce: "DTC跨境与电商直邮 (DTC Ecommerce / Online Cart Direct Sales)",
-      local_service: "本地生活/线下实体商户展示 (Local Services / Offline Store Consultation like SPA, clinic, repair, wellness)",
-      health_nutrition: "大健康功效推广 (Therapeutic health benefits, body slimming, health tech)"
-    };
+    const targetTypeLabel = "海外线下实体店铺/到店消费体验 (Overseas Local Business & Brick-and-Mortar Store / Offline Experience)";
 
-    const targetTypeLabel = siteTypeLabels[siteType as string] || siteTypeLabels.ecommerce;
-
-    const complianceLensGuidance = 
-      siteType === "local_service" 
-        ? `
-        - **IMPORTANT AUDIT LENS (本地生活与实体服务展示类商户专属评估准则 - 💆SPA实体店、诊所、本地服务、电话获客)**:
-          * 实体店/服务展示类页面不包含在线收银或加入购物车功能。因此：**不要 (DO NOT)** 判定缺少“Refund Policy”(退换货规则/退钱政策) 或在线支付安全标章为 Critical 或 Warning（只需在 legalPages 中做客观标记，不应扣减大量分数或报警）。
-          * **核心要件重点审计**: 本地实体商业最看重真实性与联系渠道。检查页面是否有：
-            1. 线下具体地址 (Physical address)
-            2. 真实的客服电话 (Phone number) 与营业时间 
-            3. 地图标注或路线提示。
-          * 检查描述中是否有对功效的夸大，例如 SPA 按摩或理疗不能宣称“根治腰椎间盘突出”、“治愈顽固疾病”等保健/医疗绝对化违规词。
-        ` 
-        : siteType === "health_nutrition" 
-        ? `
-        - **IMPORTANT AUDIT LENS (大健康功效推广专属评估准则 - 💊功效宣称、保健医疗、减肥)**:
-          * 重点检测是否包含违反谷歌“保健和医药限制”的成分陈述，如夸大医疗奇迹、保障100%见效、疗程保证。
-          * 检测页面是否有：未声明效果因人而异、缺少必要的“免责声明”(Disclaimer)、使用虚假专家背书等导致账户大面积永久封杀 (Suspension) 的重灾区因素。
-        `
-        : `
-        - **IMPORTANT AUDIT LENS (DTC线上直接交易电商专属评估准则 - 🛒标准电商独立站)**:
-          * 极度严格。必须具备完整的:
-            1. 隐私政策 (Privacy Policy)
-            2. 服务条款 (Terms of Service)
-            3. 详细的退换货条款政策 (Refund & Return Policy - 包含天数、运费谁付、退货地址)
-            4. 配送政策 (Shipping Policy - 包含配送国家、时效、计算方式)。
-          * 检查是否缺失任何消保要件，否则会被谷歌判定为“虚假陈述”直接封户。
-        `;
+    const complianceLensGuidance = `
+      - **IMPORTANT AUDIT LENS (海外线下实体店铺与到店体验落地页商户评估准则 - 如美疗SPA实体店、诊所、汽车维修/租赁、实体商铺展示、线下娱乐/餐饮等)**:
+        * 这个落地页主要用于广告引流、吸引客户直接到店消费或致电预约，而不是在线购买或加入购物车直邮寄送。因此：不要判定缺少“在线电商直邮退换货政策 (Shipping/Refund Shipping Policy)”或在线支付安全标章为 Critical 或 Warning。
+        * **核心必备要件审计（如果缺失，直接判定为 CRITICAL 致命高危，因为谷歌会判定虚假陈述 Misrepresentation 导致封账户）**:
+          1. 线上必须写明线下物理实体真实地址 (Exact physical address of the retail store or storefront).
+          2. 可供拨打的联系电话 (Telephone number for direct dial / consulting / booking) 以及对应的营业时间说明。
+          3. 包含电子邮箱 (Email) 或可追溯的联系表格。
+          4. 必须能提供一个真正的“隐私政策 (Privacy Policy)”和“用户协议/免责条款 (Terms of Service)”，且底部的这些文件跳转链接绝对不能是空死链 (例如 href="javascript:void(0)" 或 href="#")。
+        * 检查内容描述中是否有夸大性、欺骗性、诱导性的“绝对化效果宣称”：例如本地理疗/SPA/按摩不能宣称“一次即可永久根治腰椎病”、“治愈一切慢性痛症”等大健康或者医疗绝对化保障；高昂自愿消费必须有透明展示。
+        * 必须有体验科学差异性的免责/提示语（e.g., "免责声明：体验成效因人而异"）。
+    `;
 
     const prompt = `
       You are an expert Google Ads Specialist and Policy Compliance Specialist. 
-      Analyze the following HTML / Web content to identify potential issues that would lead to "Google Ads Disapproval" (广告拒登), account suspensions (如 "规避系统" Circumventing Systems, "虚假陈述" Misrepresentation, "不可接受的商业行为" Unacceptable Business Practices), or low quality score flags.
+      Analyze the following HTML / Web content to identify strictly CRITICAL potential issues (致命高危) that would lead to immediate "Google Ads Disapproval" (广告拒登), account suspensions (如 "规避系统" Circumventing Systems, "虚假陈述" Misrepresentation, "不可接受的商业行为" Unacceptable Business Practices).
+      
+      CRITICAL AUDIT DIRECTIVE: Only detect high-impact, critical policy violations with severity "CRITICAL". Do not detect or suggest mild warnings (WARNING) or minor detail optimizations (INFO). We only require CRITICAL issues.
 
       The business model / ad landing page type selected is: "${targetTypeLabel}". Apply the specific auditing filters below.
 
@@ -164,7 +145,7 @@ export default async function handler(req: any, res: any) {
 
       ${complianceLensGuidance}
 
-      You must return JSON format that adheres exactly to the schema. 
+      You must return JSON format that adheres exactly to the schema. All detected issues must strictly have "severity": "CRITICAL".
     `;
 
     let data;
@@ -210,7 +191,7 @@ export default async function handler(req: any, res: any) {
                       "id": "string",
                       "policyCategory": "string",
                       "policyName": "string",
-                      "severity": "CRITICAL" | "WARNING" | "INFO",
+                      "severity": "CRITICAL",
                       "finding": "string",
                       "offendingElement": "string",
                       "reason": "string",
@@ -371,6 +352,11 @@ export default async function handler(req: any, res: any) {
       });
 
       data = JSON.parse(response.text || "{}");
+    }
+
+    // Strict schema boundary: filter for CRITICAL issues only
+    if (data && data.detectedIssues) {
+      data.detectedIssues = data.detectedIssues.filter((issue: any) => issue.severity === "CRITICAL");
     }
 
     return res.status(200).json({
