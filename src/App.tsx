@@ -484,10 +484,10 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                  Google Ads Disapproval Checker
+                  Google Ads 谷歌广告拒登及违规排查仪
                 </span>
                 <span className="text-[9.5px] font-bold bg-indigo-950/40 border border-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full tracking-wide uppercase">
-                  v1.2 Elite
+                  v1.2 极速精英版
                 </span>
               </div>
               <p className="text-[10.5px] text-slate-400 font-sans tracking-wide mt-0.5">
@@ -1601,7 +1601,7 @@ export default function App() {
       {/* Footer Section */}
       <footer className="border-t border-white/5 bg-slate-950 py-4.5 px-4 text-center text-[10.5px] text-slate-500 mt-auto" id="main-footer">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© 2026 Google Ads Guardian Checker. 本平台非 Google 谷歌旗下官方机构，提供之诊断与重写修正策略专为提高落地页正常过审胜算所设计。</p>
+          <p>© 2026 Google Ads 谷歌广告合规卫士. 本平台非 Google 谷歌旗下官方机构，提供之诊断与重写修正策略专为提高落地页正常过审胜算所设计。</p>
           <div className="flex items-center gap-3 shrink-0">
             <span className="text-slate-600 hover:text-indigo-400 transition-colors">消保代码深度审计</span>
             <span>|</span>
