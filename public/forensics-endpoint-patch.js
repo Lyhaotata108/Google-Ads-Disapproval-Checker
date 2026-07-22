@@ -3,12 +3,19 @@
 
   const nativeFetch = window.fetch.bind(window);
 
-  window.fetch = function normalizedForensicsFetch(input, init) {
+  function rewritePath(pathname) {
+    if (pathname === "/api/forensics") return "/api/forensics-v3";
+    if (pathname === "/api/analyze") return "/api/analyze-v2";
+    return pathname;
+  }
+
+  window.fetch = function calibratedAuditFetch(input, init) {
     try {
       if (typeof input === "string") {
         const url = new URL(input, window.location.href);
-        if (url.pathname === "/api/forensics") {
-          url.pathname = "/api/forensics-v2";
+        const nextPath = rewritePath(url.pathname);
+        if (nextPath !== url.pathname) {
+          url.pathname = nextPath;
           const rewritten = url.origin === window.location.origin
             ? `${url.pathname}${url.search}${url.hash}`
             : url.toString();
@@ -16,13 +23,14 @@
         }
       } else if (input instanceof Request) {
         const url = new URL(input.url, window.location.href);
-        if (url.pathname === "/api/forensics") {
-          url.pathname = "/api/forensics-v2";
+        const nextPath = rewritePath(url.pathname);
+        if (nextPath !== url.pathname) {
+          url.pathname = nextPath;
           return nativeFetch(new Request(url.toString(), input), init);
         }
       }
     } catch {
-      // Fall through to the original request when URL normalization fails.
+      // URL 处理失败时保留原请求，避免影响页面其他接口。
     }
 
     return nativeFetch(input, init);
