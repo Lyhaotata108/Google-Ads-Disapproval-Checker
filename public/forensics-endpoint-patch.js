@@ -4,8 +4,8 @@
   const nativeFetch = window.fetch.bind(window);
 
   function rewritePath(pathname) {
-    if (pathname === "/api/forensics") return "/api/forensics-v3";
-    if (pathname === "/api/analyze") return "/api/analyze-v2";
+    if (pathname === "/api/forensics") return "/api/forensics-v4";
+    if (pathname === "/api/analyze") return "/api/analyze-v3";
     return pathname;
   }
 
