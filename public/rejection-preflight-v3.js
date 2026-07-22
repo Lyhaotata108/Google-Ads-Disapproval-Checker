@@ -215,7 +215,10 @@
       queued = false;
       ensureInput();
       bindForm();
-      if (analysisData || forensicsData || running) renderPrediction();
+      const card = document.getElementById("preflight-prediction-v3");
+      if ((analysisData || forensicsData || running) && (!card || card.parentElement !== getHost())) {
+        renderPrediction();
+      }
     });
   });
   observer.observe(document.documentElement, { childList: true, subtree: true });
