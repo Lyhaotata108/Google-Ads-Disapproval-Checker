@@ -20,13 +20,19 @@
 #result-dashboard-tabs,
 #buyer-alert-mythbuster,
 #tab-content-legal,
-#tab-content-tips {
+#tab-content-tips,
+#dashboard-placeholder {
   display: none !important;
 }
 
 /* Legacy policy guide drawer/modal */
 [id*="policy-guide"],
 [id*="guide-drawer"] {
+  display: none !important;
+}
+
+/* Keep API errors short: hide the large model-suggestion helper block. */
+#error-box > .bg-slate-950 {
   display: none !important;
 }
 
