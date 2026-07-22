@@ -1,0 +1,46 @@
+/* Streamlined production interface: keep only scan input, audit status,
+   technical evidence, detected issues and repair guidance. */
+
+/* Header extras */
+#guide-toggle-btn,
+#guide-toggle-btn + div,
+#main-header div:has(> span[title="yizbookwp@gmail.com"]) {
+  display: none !important;
+}
+
+/* Input-side explanatory/demo sections */
+#site-type-selector-card,
+#history-card,
+#analyzer-card > div:has(#presets-container) {
+  display: none !important;
+}
+
+/* Duplicate or overly verbose result sections */
+#kpi-summary-ribbon,
+#result-dashboard-tabs,
+#buyer-alert-mythbuster,
+#tab-content-legal,
+#tab-content-tips {
+  display: none !important;
+}
+
+/* Legacy policy guide drawer/modal */
+[id*="policy-guide"],
+[id*="guide-drawer"] {
+  display: none !important;
+}
+
+/* Reduce empty spacing left by removed blocks */
+#analyzer-card form {
+  margin-bottom: 0 !important;
+}
+
+#results-dashboard {
+  gap: 1rem !important;
+}
+
+@media (max-width: 767px) {
+  #main-header > div {
+    align-items: flex-start !important;
+  }
+}
